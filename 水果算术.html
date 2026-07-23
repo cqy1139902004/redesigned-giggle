@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🍎 水果算术 · 减法变灰</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: linear-gradient(145deg, #fdf8ed 0%, #fff5e0 100%);
+            font-family: 'Segoe UI', 'Comic Sans MS', 'Chalkboard SE', cursive, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 12px;
+        }
+        .game-container {
+            max-width: 600px;
+            width: 100%;
+            background: #ffffffdd;
+            backdrop-filter: blur(2px);
+            border-radius: 72px 72px 48px 48px;
+            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.1), 0 8px 12px rgba(0, 0, 0, 0.05);
+            padding: 20px 18px 30px;
+            border: 2px solid #ffeac2;
+            position: relative;
+            z-index: 2;
+        }
+        #fireworks-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 999;
+        }
+        h1 {
+            text-align: center;
+            font-size: 28px;
+            color: #cb6b3e;
+            margin: 0 0 5px 0;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 0 #f3d9b1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        h1 span {
+            font-size: 32px;
+        }
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            background: #f9e5c9;
+            padding: 8px 18px;
+            border-radius: 60px;
+            margin: 5px 0 15px 0;
+            font-weight: bold;
+            font-size: 18px;
+            color: #4f3a2c;
+            border: 1px solid #edcfa0;
+        }
+        .question-box {
+            background: #fffbee;
+            border-radius: 60px;
+            padding: 15px 10px 10px;
+            box-shadow: inset 0 4px 8px rgba(0,0,0,0.02), 0 6px 12px rgba(190, 140, 70, 0.1);
+            border: 2px solid #f7dbb0;
+        }
+        .equation {
+            font-size: 26px;
+            text-align: center;
+            background: #fcf3e0;
+            padding: 8px 0;
+            border-radius: 50px;
+            margin: 0 5px 10px 5px;
+            font-weight: bold;
+            color: #4a2e1b;
+            letter-spacing: 2px;
+        }
+        .container-visual {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px 15px;
+            min-height: 100px;
+            background: #f7efe2;
+            border-radius: 80px;
+            padding: 15px 10px;
+            margin: 0 0 12px 0;
+            border: 2px dashed #e7cfb0;
+        }
+        .basket {
+            background: #dbb68c;
+            border-radius: 40px 40px 20px 20px;
+            padding: 12px 16px;
+            display: inline-flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 6px 12px;
+            border-bottom: 6px solid #b68b64;
+            min-width: 80px;
+            max-width: 220px;
+            box-shadow: inset 0 -4px 0 #a77d59;
+            margin: 0 5px;
+        }
+        .basket span {
+            font-size: 34px;
+            line-height: 1.2;
+            flex: 0 0 auto;
+            transition: all 0.3s ease;
+        }
+        .basket.many-fruits {
+            max-width: 280px;
+            padding: 12px 20px;
+        }
+        .fruit-subtracted {
+            filter: grayscale(1) brightness(0.5);
+            opacity: 0.5;
+            transform: scale(0.85);
+        }
+        .operator-badge {
+            font-size: 36px;
+            background: #f5dbb6;
+            width: 54px;
+            height: 54px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #7b4f2b;
+            font-weight: bold;
+            box-shadow: 0 4px 0 #c9a77b;
+        }
+        .answer-area {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 18px 0 8px;
+        }
+        .num-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: none;
+            background: #ffe9c7;
+            font-size: 28px;
+            font-weight: bold;
+            color: #3f2a1b;
+            box-shadow: 0 6px 0 #c9a77b, 0 8px 12px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: 0.05s linear;
+            touch-action: manipulation;
+        }
+        .num-btn:active {
+            transform: translateY(5px);
+            box-shadow: 0 2px 0 #c9a77b;
+        }
+        .num-btn:disabled {
+            opacity: 0.5;
+            transform: translateY(4px);
+            box-shadow: 0 3px 0 #c9a77b;
+            pointer-events: none;
+        }
+        .reward-area {
+            margin-top: 15px;
+            padding: 10px 5px;
+            background: #ffeace;
+            border-radius: 60px;
+            text-align: center;
+            font-size: 22px;
+            min-height: 70px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #f6ce9f;
+        }
+        .speech-bubble {
+            background: #f9e9d9;
+            border-radius: 60px 60px 60px 10px;
+            padding: 10px 18px;
+            font-size: 22px;
+            display: inline-block;
+            margin: 5px 0;
+            border: 1px solid #eacbad;
+        }
+        .reset-btn {
+            margin-top: 12px;
+            background: #c9a77b;
+            border: none;
+            border-radius: 40px;
+            padding: 8px 30px;
+            color: white;
+            font-weight: bold;
+            font-size: 20px;
+            box-shadow: 0 4px 0 #8b6a48;
+            cursor: pointer;
+            transition: 0.05s linear;
+        }
+        .reset-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #8b6a48;
+        }
+        @media (max-width: 450px) {
+            .game-container { padding: 15px 10px; }
+            .num-btn { width: 55px; height: 55px; font-size: 24px; }
+            .basket span { font-size: 28px; }
+            .basket { max-width: 180px; padding: 10px 12px; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="fireworks-canvas"></canvas>
+    <div class="game-container" id="app">
+        <h1><span>🧸</span> 水果算术 <span>🍉</span></h1>
+        <div class="status-bar">
+            <span>⭐ 第 <span id="questionNum">1</span>/10</span>
+            <span>✅ <span id="correctCount">0</span></span>
+        </div>
+        <div class="question-box">
+            <div class="equation" id="equationDisplay">? + ? = ?</div>
+            <div class="container-visual" id="visualContainer">
+                <!-- 动态渲染水果 -->
+            </div>
+            <div class="answer-area" id="answerButtons">
+                <button class="num-btn" data-num="0">0</button>
+                <button class="num-btn" data-num="1">1</button>
+                <button class="num-btn" data-num="2">2</button>
+                <button class="num-btn" data-num="3">3</button>
+                <button class="num-btn" data-num="4">4</button>
+                <button class="num-btn" data-num="5">5</button>
+                <button class="num-btn" data-num="6">6</button>
+                <button class="num-btn" data-num="7">7</button>
+                <button class="num-btn" data-num="8">8</button>
+                <button class="num-btn" data-num="9">9</button>
+                <button class="num-btn" data-num="10">10</button>
+            </div>
+        </div>
+        <div class="reward-area" id="rewardArea">
+            <div class="speech-bubble" id="speechBubble">🐣 点击数字，答对放烟花～</div>
+            <div id="specialReward" style="font-size:20px; margin-top:6px;"></div>
+        </div>
+        <div style="display:flex; justify-content:center; margin-top:8px;">
+            <button class="reset-btn" id="resetGameBtn">🔄 重新开始</button>
+        </div>
+    </div>
+
+    <script>
+        // ========== 1. 烟花粒子系统 ==========
+        const canvas = document.getElementById('fireworks-canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let particles = [];
+        let animationId = null;
+
+        function resizeCanvas() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        const COLORS = ['#FF5E5B','#FFCA3A','#8AC926','#1982C4','#6A4C93','#FF9F1C','#E71D36','#2EC4B6','#FF6B6B','#C77DFF'];
+
+        class Particle {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 6 + 2;
+                this.vx = Math.cos(angle) * speed;
+                this.vy = Math.sin(angle) * speed;
+                this.size = Math.random() * 4 + 2;
+                this.color = COLORS[Math.floor(Math.random() * COLORS.length)];
+                this.alpha = 1;
+                this.decay = Math.random() * 0.02 + 0.02;
+                this.gravity = 0.08;
+                this.friction = 0.98;
+            }
+            update() {
+                this.vx *= this.friction;
+                this.vy *= this.friction;
+                this.vy += this.gravity;
+                this.x += this.vx;
+                this.y += this.vy;
+                this.alpha -= this.decay;
+                return this.alpha > 0;
+            }
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.alpha;
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 12;
+                ctx.shadowColor = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        function launchFireworks(count = 80, centerX = null, centerY = null) {
+            const cx = centerX !== null ? centerX : width * 0.5 + (Math.random() - 0.5) * width * 0.6;
+            const cy = centerY !== null ? centerY : height * 0.4 + (Math.random() - 0.5) * height * 0.3;
+            for (let i = 0; i < count; i++) {
+                particles.push(new Particle(cx, cy));
+            }
+            if (!animationId) {
+                animateFireworks();
+            }
+        }
+
+        function animateFireworks() {
+            ctx.clearRect(0, 0, width, height);
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                if (!p.update()) {
+                    particles.splice(i, 1);
+                } else {
+                    p.draw();
+                }
+            }
+            if (particles.length > 0) {
+                animationId = requestAnimationFrame(animateFireworks);
+            } else {
+                animationId = null;
+                ctx.clearRect(0, 0, width, height);
+            }
+        }
+
+        function multiFireworks(numBursts = 3) {
+            for (let i = 0; i < numBursts; i++) {
+                setTimeout(() => {
+                    launchFireworks(60 + Math.floor(Math.random() * 40));
+                }, i * 200);
+            }
+        }
+
+        // ========== 2. 游戏逻辑 ==========
+        const TOTAL_QUESTIONS = 10;
+        let questions = [];
+        let currentIndex = 0;
+        let correctCount = 0;
+        let answered = false;
+        let isProcessing = false;
+
+        const successPhrases = [
+            "哇，你太棒了！🎉", "真厉害！小天才！🌟", "好聪明呀！继续加油！✨",
+            "答对啦！真了不起！💪", "太酷了！你真棒！🎈", "完美！真让人骄傲！🏆"
+        ];
+        const failPhrases = [
+            "加油，你可以的！💪", "再试一次，一定行！🌈", "别灰心，再来一次～😊",
+            "差一点点，再想想！🧐", "没关系，继续努力！❤️"
+        ];
+        let usedSuccessIdx = 0;
+        let usedFailIdx = 0;
+
+        const equationDisplay = document.getElementById('equationDisplay');
+        const visualContainer = document.getElementById('visualContainer');
+        const answerBtns = document.querySelectorAll('.num-btn');
+        const questionNumSpan = document.getElementById('questionNum');
+        const correctCountSpan = document.getElementById('correctCount');
+        const speechBubble = document.getElementById('speechBubble');
+        const specialReward = document.getElementById('specialReward');
+        const resetBtn = document.getElementById('resetGameBtn');
+
+        function shuffleArray(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        function getNextPhrase(pool, idxRef) {
+            const phrase = pool[idxRef.value];
+            idxRef.value = (idxRef.value + 1) % pool.length;
+            return phrase;
+        }
+
+        function speakText(text, emotion = 'happy') {
+            if (!window.speechSynthesis) return;
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'zh-CN';
+            if (emotion === 'success') {
+                utterance.rate = 1.15; utterance.pitch = 1.25;
+            } else if (emotion === 'encourage') {
+                utterance.rate = 0.95; utterance.pitch = 1.1;
+            } else {
+                utterance.rate = 1.0; utterance.pitch = 1.0;
+            }
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function generateQuestions() {
+            const qs = [];
+            const fruitPool = ['🍎','🍊','🍋','🍇','🍓','🍑','🍒','🍌','🍉','🍐'];
+            const globalFruit = fruitPool[Math.floor(Math.random() * fruitPool.length)];
+            for (let i = 0; i < TOTAL_QUESTIONS; i++) {
+                let a, b, op, result;
+                do {
+                    op = Math.random() > 0.5 ? '+' : '-';
+                    if (op === '+') {
+                        a = Math.floor(Math.random() * 9) + 1;
+                        b = Math.floor(Math.random() * (10 - a)) + 1;
+                        result = a + b;
+                    } else {
+                        a = Math.floor(Math.random() * 9) + 2;
+                        b = Math.floor(Math.random() * (a - 1)) + 1;
+                        result = a - b;
+                    }
+                } while (result < 0 || result > 10);
+                qs.push({ a, b, op, result, emoji: globalFruit });
+            }
+            return shuffleArray(qs);
+        }
+
+        // ✅ 核心渲染函数：减法时，被减数（右侧篮子）水果变灰
+        function renderVisual(question) {
+            const { a, b, op, emoji } = question;
+
+            // 左侧篮子（减数）：正常显示，所有水果不变灰
+            const leftItems = Array.from({ length: a }, () => ({ emoji, dimmed: false }));
+
+            // 右侧篮子（被减数）：如果是减法，则前b个水果变灰（代表被拿走了）
+            const rightItems = Array.from({ length: b }, (_, idx) => {
+                return {
+                    emoji,
+                    dimmed: (op === '-' && idx < a)  // 这里 a 是减数数量，b 是被减数数量
+                };
+            });
+
+            // 修正：被减数是右侧篮子，数量为 b，其中前 a 个变灰（a是减数）
+            // 实际上，减法中：被减数（右侧）有 b 个水果，减数（左侧）有 a 个水果
+            // 被拿走的数量是 a，所以右侧篮子中前 a 个水果变灰
+            const rightItemsCorrected = Array.from({ length: b }, (_, idx) => {
+                return {
+                    emoji,
+                    dimmed: (op === '-' && idx < a)
+                };
+            });
+
+            function basketHtml(items, extraClass = '') {
+                let cls = 'basket';
+                if (items.length > 5) cls += ' many-fruits';
+                if (extraClass) cls += ' ' + extraClass;
+                let html = `<div class="${cls}">`;
+                items.forEach(item => {
+                    const dimClass = item.dimmed ? 'fruit-subtracted' : '';
+                    html += `<span class="${dimClass}">${item.emoji}</span>`;
+                });
+                html += `</div>`;
+                return html;
+            }
+
+            let html = '';
+            // 左侧篮子（减数）—— 正常显示
+            html += basketHtml(leftItems);
+            // 运算符
+            html += `<div class="operator-badge">${op}</div>`;
+            // 右侧篮子（被减数）—— 减法时前a个水果变灰
+            html += basketHtml(rightItemsCorrected);
+            // 等号
+            html += `<div class="operator-badge" style="background:#f0d4b0;">=</div>`;
+            // 结果篮子 (问号)
+            html += `<div class="basket" style="background:#eddcc8; border-bottom:6px solid #c6a889;">`;
+            html += `<span style="font-size:42px; opacity:0.7;">❓</span>`;
+            html += `</div>`;
+            visualContainer.innerHTML = html;
+        }
+
+        function loadQuestion(index) {
+            const q = questions[index];
+            if (!q) return;
+            answered = false;
+            isProcessing = false;
+            answerBtns.forEach(btn => {
+                btn.disabled = false;
+                btn.style.background = '#ffe9c7';
+            });
+            equationDisplay.textContent = `${q.a} ${q.op} ${q.b} = ?`;
+            // 加载时显示减法变灰效果
+            renderVisual(q);
+            questionNumSpan.textContent = index + 1;
+            correctCountSpan.textContent = correctCount;
+            specialReward.innerHTML = '';
+            const opText = q.op === '+' ? '加' : '减';
+            speakText(`第${index+1}题，${q.a} ${opText} ${q.b} 等于多少？`, 'happy');
+            speechBubble.textContent = `🍇 数一数篮子里的水果吧！`;
+        }
+
+        function autoNextQuestion() {
+            if (currentIndex === TOTAL_QUESTIONS - 1) {
+                finishGame();
+                return;
+            }
+            setTimeout(() => {
+                if (answered) {
+                    currentIndex++;
+                    loadQuestion(currentIndex);
+                }
+            }, 1800);
+        }
+
+        function handleAnswer(selectedNum) {
+            if (answered || isProcessing) return;
+            const q = questions[currentIndex];
+            const isCorrect = (selectedNum === q.result);
+
+            if (isCorrect) {
+                isProcessing = true;
+                answered = true;
+                answerBtns.forEach(btn => btn.disabled = true);
+                correctCount++;
+                correctCountSpan.textContent = correctCount;
+
+                multiFireworks(3);
+
+                const phrase = getNextPhrase(successPhrases, { value: usedSuccessIdx });
+                usedSuccessIdx = (usedSuccessIdx + 1) % successPhrases.length;
+                speakText(phrase, 'success');
+                speechBubble.textContent = phrase + ' 🎆';
+                specialReward.innerHTML = '🎇 烟花绽放！好棒！';
+
+                equationDisplay.textContent = `${q.a} ${q.op} ${q.b} = ${q.result}`;
+                const resultEmoji = q.emoji;
+                const resultItems = Array.from({ length: q.result }, () => resultEmoji);
+                let resultHtml = `<div class="basket" style="background:#eddcc8; border-bottom:6px solid #c6a889;">`;
+                resultItems.forEach(item => { resultHtml += `<span>${item}</span>`; });
+                resultHtml += `</div>`;
+                const baskets = visualContainer.querySelectorAll('.basket');
+                if (baskets.length >= 3) {
+                    baskets[2].outerHTML = resultHtml;
+                }
+                autoNextQuestion();
+                isProcessing = false;
+            } else {
+                const phrase = getNextPhrase(failPhrases, { value: usedFailIdx });
+                usedFailIdx = (usedFailIdx + 1) % failPhrases.length;
+                speakText(phrase, 'encourage');
+                speechBubble.textContent = phrase + ` 再选一个吧`;
+                const btn = document.querySelector(`.num-btn[data-num="${selectedNum}"]`);
+                if (btn) {
+                    btn.style.background = '#fbb';
+                    setTimeout(() => { if (btn) btn.style.background = '#ffe9c7'; }, 400);
+                }
+            }
+        }
+
+        function finishGame() {
+            const total = TOTAL_QUESTIONS;
+            const correct = correctCount;
+            const percent = correct / total;
+            let rewardMsg = '';
+            let trophyHtml = '';
+            if (percent >= 1) {
+                rewardMsg = '🎉 完美通关！你是算术小状元！ 🏆🏆🏆';
+                trophyHtml = '<div style="font-size:60px;">🏆🏆🏆</div><div style="font-size:28px;">大奖杯送给你！🌟</div>';
+                speakText('太棒了！全部答对！获得大奖杯！', 'success');
+                for (let i=0; i<5; i++) {
+                    setTimeout(() => launchFireworks(100), i*300);
+                }
+            } else if (percent >= 0.8) {
+                rewardMsg = '🎈 超级棒！答对80%以上！获得大星星奖章！ ⭐⭐⭐';
+                trophyHtml = '<div style="font-size:60px;">🌟⭐🌟</div><div>大奖励！你真厉害！</div>';
+                speakText('你好厉害！答对了百分之八十，获得大星星奖励！', 'success');
+                multiFireworks(4);
+            } else if (percent >= 0.6) {
+                rewardMsg = '🎊 不错哦！答对60%以上！获得烟花大礼包 🎆🎆';
+                trophyHtml = '<div style="font-size:60px;">🎆🎇🎆</div><div>继续加油，你很棒！</div>';
+                speakText('答对了百分之六十，获得烟花大礼包！继续加油！', 'happy');
+                multiFireworks(2);
+            } else {
+                rewardMsg = '💪 继续努力！下次一定能更好！加油！';
+                trophyHtml = '<div style="font-size:50px;">🌱💪🌱</div><div>每一次练习都是进步！</div>';
+                speakText('加油！多多练习就会越来越棒！', 'encourage');
+            }
+            speechBubble.textContent = `✅ 完成！答对 ${correct}/${total} `;
+            specialReward.innerHTML = rewardMsg + '<br>' + trophyHtml;
+            answerBtns.forEach(btn => btn.disabled = true);
+            equationDisplay.textContent = `🎯 得分：${correct} / ${total}`;
+            visualContainer.innerHTML = `<div style="font-size:28px; padding:20px;">🎈 恭喜你完成挑战 🎈</div>`;
+        }
+
+        function resetGame() {
+            correctCount = 0;
+            currentIndex = 0;
+            usedSuccessIdx = 0;
+            usedFailIdx = 0;
+            questions = generateQuestions();
+            answerBtns.forEach(btn => btn.disabled = false);
+            specialReward.innerHTML = '';
+            loadQuestion(0);
+            speechBubble.textContent = '🔄 新的一轮！加油！';
+        }
+
+        answerBtns.forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                if (answered || isProcessing) return;
+                const val = parseInt(this.dataset.num, 10);
+                answerBtns.forEach(b => b.style.background = '#ffe9c7');
+                this.style.background = '#fcd49b';
+                handleAnswer(val);
+            });
+        });
+
+        resetBtn.addEventListener('click', resetGame);
+
+        function initGame() {
+            questions = generateQuestions();
+            currentIndex = 0;
+            correctCount = 0;
+            usedSuccessIdx = 0;
+            usedFailIdx = 0;
+            loadQuestion(0);
+        }
+        initGame();
+    </script>
+</body>
+</html>
